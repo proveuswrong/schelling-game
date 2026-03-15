@@ -60,7 +60,7 @@ export class GameRoom {
       return new Response('Expected WebSocket', { status: 426 });
     }
     const [client, server] = Object.values(new WebSocketPair());
-    await this.handleSession(server);
+    this.handleSession(server);
     return new Response(null, { status: 101, webSocket: client });
   }
 
