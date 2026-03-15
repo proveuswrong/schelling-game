@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 
 const STAKE_CAP = 100;
 const LEAK_DETECTION_THRESHOLD = 0.05;
+const INCOHERENT_SLASH_RATE = 0.03;
+const LEAVE_PENALTY_ROUNDS = 3;
 
 const EDUCATIONAL_NOTES = [
   "You submitted a hash of your answer, not the answer itself. Nobody could see your vote before the reveal. This is how the real protocol enforces independent judgment: cryptographic commitment prevents herding.",
@@ -231,10 +233,22 @@ function applyBalanceChanges(players, roundResult) {
   return changes;
 }
 
+/**
+ * Compute the penalty for a player who leaves while the game is in progress.
+ * Penalty equals three incoherent rounds: 3 × 3% × stake.
+ * @param {number} balance - current player balance
+ * @returns {number} penalty amount (rounded to 2 decimal places)
+ */
+function computeLeavePenalty(balance) {
+  const stake = Math.min(STAKE_CAP, balance > 0 ? balance : 0);
+  return Math.round(LEAVE_PENALTY_ROUNDS * INCOHERENT_SLASH_RATE * stake * 100) / 100;
+}
+
 export {
   verifyCommit,
   computeRoundResult,
   applyBalanceChanges,
   extractNumbers,
+  computeLeavePenalty,
   EDUCATIONAL_NOTES,
 };

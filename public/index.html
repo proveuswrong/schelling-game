@@ -414,6 +414,7 @@ function handleServerMessage(msg) {
     case 'game_over':        return onGameOver(msg);
     case 'chat':             return onChat(msg);
     case 'report_ack':       return notify('Leak reported ✓', 'success', 1500);
+    case 'player_left':      return onPlayerLeft(msg);
     case 'error':            return notify(msg.message, 'error');
   }
 }
@@ -449,6 +450,13 @@ function onRoomState(msg) {
   }
 
   if (room.phase === 'lobby') showView('lobby');
+}
+
+function onPlayerLeft(msg) {
+  const penaltyText = msg.leavePenalty > 0
+    ? ` (penalised ${msg.leavePenalty} chips)`
+    : '';
+  notify(`${msg.username} left the room${penaltyText}`, 'error', 5000);
 }
 
 function onGameStarted(msg) {

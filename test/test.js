@@ -4,7 +4,7 @@
  */
 
 import crypto from 'node:crypto';
-import { verifyCommit, computeRoundResult, applyBalanceChanges, extractNumbers } from '../src/gameLogic.js';
+import { verifyCommit, computeRoundResult, applyBalanceChanges, extractNumbers, computeLeavePenalty } from '../src/gameLogic.js';
 
 let passed = 0;
 let failed = 0;
@@ -298,6 +298,28 @@ console.log('\n11. Non-committing player is incoherent');
   const dave = result.players.find(p => p.username === 'dave');
   assert(dave && !dave.coherent, 'Non-committing Dave is incoherent');
   assert(dave && dave.slash > 0, `Dave slashed (got ${dave?.slash})`);
+}
+
+// ---------------------------------------------------------------------------
+// 12. computeLeavePenalty
+// ---------------------------------------------------------------------------
+console.log('\n12. computeLeavePenalty');
+
+{
+  // Normal balance (100) → stake = 100, penalty = 3 × 3% × 100 = 9
+  assert(approx(computeLeavePenalty(100), 9), `Penalty for balance 100 = 9 (got ${computeLeavePenalty(100)})`);
+
+  // Low balance (50) → stake = 50, penalty = 3 × 3% × 50 = 4.5
+  assert(approx(computeLeavePenalty(50), 4.5), `Penalty for balance 50 = 4.5 (got ${computeLeavePenalty(50)})`);
+
+  // Zero balance → stake = 0, penalty = 0
+  assert(computeLeavePenalty(0) === 0, `Penalty for balance 0 = 0 (got ${computeLeavePenalty(0)})`);
+
+  // High balance (500) → stake capped at 100, penalty = 3 × 3% × 100 = 9
+  assert(approx(computeLeavePenalty(500), 9), `Penalty for balance 500 = 9 (got ${computeLeavePenalty(500)})`);
+
+  // Negative balance → stake = 0, penalty = 0
+  assert(computeLeavePenalty(-10) === 0, `Penalty for balance -10 = 0 (got ${computeLeavePenalty(-10)})`);
 }
 
 // ---------------------------------------------------------------------------

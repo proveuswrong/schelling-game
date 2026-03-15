@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { verifyCommit, computeRoundResult, applyBalanceChanges } from './gameLogic.js';
+import { verifyCommit, computeRoundResult, applyBalanceChanges, computeLeavePenalty } from './gameLogic.js';
 import db from './db.js';
 import QUESTIONS from './questions.js';
 
@@ -502,6 +502,22 @@ function handleDisconnect(ws) {
   const player = room.players.get(_username);
   if (player) {
     player.isConnected = false;
+
+    // If the game is in progress, apply a leave penalty (3 incoherent rounds)
+    let leavePenalty = 0;
+    if (room.phase !== 'lobby') {
+      leavePenalty = computeLeavePenalty(player.balance);
+      player.balance = Math.max(0, Math.round((player.balance - leavePenalty) * 100) / 100);
+    }
+
+    // Notify all remaining players that this player left
+    broadcastAll(room, {
+      type: 'player_left',
+      username: _username,
+      leavePenalty,
+      newBalance: player.balance,
+    });
+
     broadcastAll(room, {
       type: 'room_state',
       room: {
