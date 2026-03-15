@@ -1,9 +1,7 @@
-'use strict';
-
-const { v4: uuidv4 } = require('uuid');
-const { verifyCommit, computeRoundResult, applyBalanceChanges } = require('./gameLogic');
-const db = require('./db');
-const QUESTIONS = require('./questions');
+import { v4 as uuidv4 } from 'uuid';
+import { verifyCommit, computeRoundResult, applyBalanceChanges } from './gameLogic.js';
+import db from './db.js';
+import QUESTIONS from './questions.js';
 
 const STARTING_BALANCE = 1000;
 const ROUND_STAKE = 100;
@@ -522,4 +520,4 @@ function getRoomForWs(ws) {
   return ws._roomCode ? rooms.get(ws._roomCode) : null;
 }
 
-module.exports = { handleMessage, handleDisconnect, rooms };
+export { handleMessage, handleDisconnect, rooms };

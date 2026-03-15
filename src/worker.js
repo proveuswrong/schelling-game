@@ -1,5 +1,5 @@
-const { verifyCommit, computeRoundResult, applyBalanceChanges } = require('./gameLogic');
-const QUESTIONS = require('./questions');
+import { verifyCommit, computeRoundResult, applyBalanceChanges } from './gameLogic.js';
+import QUESTIONS from './questions.js';
 
 const STARTING_BALANCE = 1000;
 const ROUND_STAKE = 100;
