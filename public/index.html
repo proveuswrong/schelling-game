@@ -454,7 +454,7 @@ function onRoomState(msg) {
 
 function onPlayerLeft(msg) {
   const penaltyText = msg.leavePenalty > 0
-    ? ` (penalised ${msg.leavePenalty} chips)`
+    ? ` (penalized ${msg.leavePenalty} chips)`
     : '';
   notify(`${msg.username} left the room${penaltyText}`, 'error', 5000);
 }
