@@ -146,22 +146,40 @@ console.log('\n5. Flat round cancellation');
 }
 
 // ---------------------------------------------------------------------------
-// 6. Fewer than 3 reveals — round cancelled
+// 6. Fewer than 2 reveals — round cancelled
 // ---------------------------------------------------------------------------
-console.log('\n6. Fewer than 3 reveals → cancelled');
+console.log('\n6. Fewer than 2 reveals → cancelled');
 
 {
   const salt = 'aaa';
   const players = [
     { username: 'alice', score: 0.50, balance: 100, committed: true, revealed: true, hash: makeCommit(0.50, salt) },
-    { username: 'bob',   score: 0.80, balance: 100, committed: true, revealed: true, hash: makeCommit(0.80, salt) },
-    // carol did not reveal
+    // bob and carol did not reveal
+    { username: 'bob',   score: null, balance: 100, committed: false, revealed: false, hash: null },
     { username: 'carol', score: null, balance: 100, committed: false, revealed: false, hash: null },
   ];
 
   const result = computeRoundResult(players, [], [], 3);
-  assert(result.cancelled, 'Round cancelled with only 2 reveals');
-  assert(result.cancelReason === 'fewer_than_3_reveals', `Cancel reason correct (got ${result.cancelReason})`);
+  assert(result.cancelled, 'Round cancelled with only 1 reveal');
+  assert(result.cancelReason === 'fewer_than_2_reveals', `Cancel reason correct (got ${result.cancelReason})`);
+}
+
+// ---------------------------------------------------------------------------
+// 6b. Two-player game completes round successfully
+// ---------------------------------------------------------------------------
+console.log('\n6b. Two-player game completes round');
+
+{
+  const salt = 'aaa2';
+  const players = [
+    { username: 'alice', score: 0.30, balance: 100, committed: true, revealed: true, hash: makeCommit(0.30, salt) },
+    { username: 'bob',   score: 0.70, balance: 100, committed: true, revealed: true, hash: makeCommit(0.70, salt) },
+  ];
+
+  const result = computeRoundResult(players, [], [], 3);
+  assert(!result.cancelled, 'Round not cancelled with 2 reveals');
+  assert(typeof result.mu === 'number', 'mu is a number');
+  assert(approx(result.mu, 0.50, 0.01), `mu ≈ 0.50 (got ${result.mu})`);
 }
 
 // ---------------------------------------------------------------------------
@@ -274,7 +292,7 @@ console.log('\n11. Non-committing player is incoherent');
     { username: 'dave',  score: null, balance: 100, committed: false, revealed: false, hash: null },
   ];
 
-  // Need 3 valid reveals → ok (alice, bob, carol)
+  // Need 2 valid reveals → ok (alice, bob, carol provide 3)
   const result = computeRoundResult(players, [], [], 7);
   assert(!result.cancelled, 'Round proceeds with 3 valid reveals');
   const dave = result.players.find(p => p.username === 'dave');

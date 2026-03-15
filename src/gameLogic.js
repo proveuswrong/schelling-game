@@ -68,9 +68,9 @@ function computeRoundResult(players, leakReports, chatMessages, roundIndex) {
   // Players who didn't commit or reveal are treated as incoherent (slashed 3%)
   // Confirmed leakers slashed at 9%
 
-  // For scoring we need at least 3 valid reveals
-  if (validReveals.length < 3) {
-    return buildCancelledResult(players, 'fewer_than_3_reveals', roundIndex, confirmedLeakers, leakBounties);
+  // For scoring we need at least 2 valid reveals
+  if (validReveals.length < 2) {
+    return buildCancelledResult(players, 'fewer_than_2_reveals', roundIndex, confirmedLeakers, leakBounties);
   }
 
   // Compute stakes

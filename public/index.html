@@ -611,7 +611,7 @@ function onRoundResult(msg) {
   if (result.cancelled) {
     cancelBanner.classList.remove('hidden');
     const reasonMap = {
-      fewer_than_3_reveals: 'fewer than 3 players revealed.',
+      fewer_than_2_reveals: 'fewer than 2 players revealed.',
       sigma_too_small: 'all answers were too similar (σ < 0.02).',
     };
     document.getElementById('cancel-reason').textContent = reasonMap[result.cancelReason] || result.cancelReason;
