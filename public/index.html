@@ -385,6 +385,7 @@ function connect(username, roomCode, roundCount) {
   });
 
   ws.addEventListener('close', () => {
+    if (!myUsername) return;
     reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
     notify(`Disconnected. Reconnecting in ${Math.round(delay / 1000)}s…`, 'error');
