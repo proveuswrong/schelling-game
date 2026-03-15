@@ -1,6 +1,4 @@
-'use strict';
-
-module.exports = [
+export default [
   // Slider questions (1-30)
   { id: 1,  text: "How round is a circle? (0 = not round, 1 = perfectly round)", type: "slider", category: "clear" },
   { id: 2,  text: "How necessary is oxygen for human survival? (0 = unnecessary, 1 = absolutely essential)", type: "slider", category: "clear" },

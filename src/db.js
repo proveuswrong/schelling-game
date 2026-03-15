@@ -1,8 +1,8 @@
-'use strict';
+import Database from 'better-sqlite3';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const Database = require('better-sqlite3');
-const path = require('path');
-
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'schelling.db');
 
 let db;
@@ -145,7 +145,7 @@ function getAllVoteLogs() {
   return getDb().prepare('SELECT * FROM vote_logs ORDER BY id ASC').all();
 }
 
-module.exports = {
+export default {
   getDb,
   upsertPlayer,
   getPlayer,

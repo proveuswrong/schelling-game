@@ -1,12 +1,10 @@
-'use strict';
-
 /**
  * Test suite for Schelling Game logic.
  * Run with: node test/test.js
  */
 
-const crypto = require('crypto');
-const { verifyCommit, computeRoundResult, applyBalanceChanges, extractNumbers } = require('../src/gameLogic');
+import crypto from 'node:crypto';
+import { verifyCommit, computeRoundResult, applyBalanceChanges, extractNumbers } from '../src/gameLogic.js';
 
 let passed = 0;
 let failed = 0;

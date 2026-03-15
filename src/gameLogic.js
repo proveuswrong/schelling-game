@@ -1,6 +1,4 @@
-'use strict';
-
-const crypto = require('crypto');
+import crypto from 'node:crypto';
 
 const STAKE_CAP = 100;
 const LEAK_DETECTION_THRESHOLD = 0.05;
@@ -233,7 +231,7 @@ function applyBalanceChanges(players, roundResult) {
   return changes;
 }
 
-module.exports = {
+export {
   verifyCommit,
   computeRoundResult,
   applyBalanceChanges,

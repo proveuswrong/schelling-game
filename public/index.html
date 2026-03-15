@@ -372,7 +372,7 @@ function connect(username, roomCode, roundCount) {
   if (ws) { try { ws.close(); } catch (_) {} }
 
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}`);
+  ws = new WebSocket(`${proto}://${location.host}/ws?room=${roomCode}`);
 
   ws.addEventListener('open', () => {
     reconnectAttempts = 0;
