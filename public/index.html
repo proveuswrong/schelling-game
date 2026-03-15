@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Schelling Game</title>
+<style>
+/* ── Reset & base ──────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--border:#2e2e2e;
+  --text:#e0e0e0;--muted:#888;--accent:#4a90d9;--accent2:#357abd;
+  --green:#4caf50;--red:#e53935;--orange:#ff9800;--yellow:#fdd835;
+  --radius:8px;--font:'Segoe UI',system-ui,sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+button{cursor:pointer;border:none;border-radius:var(--radius);padding:.5rem 1.1rem;font-size:.9rem;font-family:inherit;transition:background .15s,transform .1s}
+button:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+input,select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:.95rem;padding:.5rem .75rem;width:100%;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--accent)}
+label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:.3rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+.hidden{display:none!important}
+/* ── Layout ─────────────────────────────────────────────────────────── */
+#app{max-width:900px;margin:0 auto;padding:1rem}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.75rem}
+header h1{font-size:1.4rem;letter-spacing:.05em;color:var(--accent)}
+/* ── Views ───────────────────────────────────────────────────────── */
+.view:not(.active){display:none!important}
+/* Lobby */
+#lobby-form{display:grid;gap:.75rem;max-width:420px;margin:0 auto}
+#lobby-form .row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+#room-code-display{font-size:2rem;font-weight:700;letter-spacing:.15em;color:var(--accent);text-align:center;padding:.5rem;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)}
+.player-list{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+.player-chip{background:var(--surface2);border:1px solid var(--border);border-radius:50px;padding:.2rem .75rem;font-size:.85rem;display:flex;align-items:center;gap:.35rem}
+.player-chip.host::after{content:'👑';font-size:.75rem}
+.player-chip.disconnected{opacity:.5}
+/* Game view */
+#game-view{display:grid;grid-template-columns:1fr 280px;gap:1rem}
+@media(max-width:650px){#game-view{grid-template-columns:1fr}}
+#game-main{display:flex;flex-direction:column;gap:.75rem}
+/* Timer */
+#timer-wrap{display:flex;align-items:center;gap:.75rem;font-size:.9rem;color:var(--muted)}
+#timer-bar-outer{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+#timer-bar{height:100%;background:var(--accent);transition:width .5s linear,background .3s}
+#timer-num{font-weight:700;min-width:2.5rem;text-align:right;transition:color .3s}
+#timer-num.pulse{animation:pulse .5s infinite alternate}
+@keyframes pulse{to{opacity:.3}}
+/* Question */
+#question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+#phase-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;color:var(--muted)}
+#question-text{font-size:1.1rem;font-weight:600;margin-bottom:1rem;line-height:1.4}
+/* Slider input */
+#slider-wrap{display:flex;flex-direction:column;gap:.5rem}
+#slider-input{width:100%;accent-color:var(--accent);cursor:pointer;height:6px}
+#slider-value{font-size:1.4rem;font-weight:700;color:var(--accent);text-align:center}
+#slider-labels{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+/* Select grid */
+#select-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem}
+.opt-card{background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius);padding:.6rem .9rem;cursor:pointer;text-align:center;font-size:.9rem;transition:border-color .15s,background .15s;user-select:none}
+.opt-card:hover{border-color:var(--accent)}
+.opt-card.selected{border-color:var(--accent);background:rgba(74,144,217,.15);color:var(--accent);font-weight:600}
+.opt-card.disabled{opacity:.4;cursor:default}
+/* Commit button */
+#commit-area{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+#commit-btn{flex:1;min-width:140px}
+#commit-status-text{font-size:.85rem;color:var(--muted)}
+/* Phase banner */
+#phase-banner{background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius);padding:.6rem 1rem;font-size:.9rem;color:var(--accent);text-align:center}
+/* Reveal */
+#reveal-area{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+#reveal-btn{flex:1;min-width:140px}
+/* Sidebar */
+#game-sidebar{display:flex;flex-direction:column;gap:.75rem}
+/* Players panel */
+#players-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+#players-panel h3{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.6rem}
+.player-row{display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--border);font-size:.88rem}
+.player-row:last-child{border-bottom:none}
+.player-name{display:flex;align-items:center;gap:.4rem}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.dot.committed{background:var(--orange)}
+.dot.revealed{background:var(--green)}
+.balance-badge{font-size:.8rem;color:var(--muted)}
+/* Chat */
+#chat-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;display:flex;flex-direction:column;gap:.5rem;max-height:260px}
+#chat-panel h3{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+#chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:.35rem;min-height:80px;max-height:160px}
+.chat-msg{font-size:.83rem;line-height:1.4}
+.chat-msg .from{font-weight:600;color:var(--accent);margin-right:.3rem}
+.chat-msg .report-btn{font-size:.7rem;color:var(--red);background:none;border:none;cursor:pointer;padding:0 .3rem;opacity:.6}
+.chat-msg .report-btn:hover{opacity:1}
+#chat-input-row{display:flex;gap:.4rem}
+#chat-input{flex:1;font-size:.85rem}
+#chat-send{padding:.4rem .8rem;font-size:.85rem}
+/* Results view */
+#results-view{display:flex;flex-direction:column;gap:1rem}
+#results-header{display:flex;align-items:center;justify-content:space-between}
+#results-header h2{font-size:1.2rem}
+#results-countdown{font-size:.85rem;color:var(--muted)}
+#dot-plot-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+#dot-plot-svg{width:100%;overflow:visible}
+#stats-row{display:flex;gap:1rem;flex-wrap:wrap}
+.stat-pill{background:var(--surface2);border:1px solid var(--border);border-radius:50px;padding:.3rem .9rem;font-size:.85rem}
+.stat-pill span{font-weight:700;color:var(--accent)}
+#results-players{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.6rem}
+.result-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:.75rem;font-size:.875rem}
+.result-card.coherent{border-color:var(--green)}
+.result-card.incoherent{border-color:var(--red)}
+.result-card .rname{font-weight:700;margin-bottom:.3rem}
+.result-card .rdelta{font-weight:700}
+.result-card .rdelta.pos{color:var(--green)}
+.result-card .rdelta.neg{color:var(--red)}
+#educational-note{background:var(--surface);border-left:3px solid var(--accent);padding:.75rem 1rem;font-size:.87rem;color:var(--muted);border-radius:0 var(--radius) var(--radius) 0;line-height:1.5}
+#cancel-banner{background:rgba(255,152,0,.1);border:1px solid var(--orange);border-radius:var(--radius);padding:.75rem 1rem;color:var(--orange)}
+/* Summary view */
+#summary-view{display:flex;flex-direction:column;gap:1rem}
+#summary-table{width:100%;border-collapse:collapse;font-size:.9rem}
+#summary-table th,#summary-table td{padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)}
+#summary-table th{color:var(--muted);font-weight:600;font-size:.8rem;text-transform:uppercase}
+#summary-table tr:last-child td{border-bottom:none}
+.profit-pos{color:var(--green);font-weight:700}
+.profit-neg{color:var(--red);font-weight:700}
+/* Leaderboard */
+#leaderboard-view{display:flex;flex-direction:column;gap:1rem}
+#lb-table{width:100%;border-collapse:collapse;font-size:.9rem}
+#lb-table th,#lb-table td{padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)}
+#lb-table th{color:var(--muted);font-weight:600;font-size:.8rem;text-transform:uppercase}
+#lb-table tr:last-child td{border-bottom:none}
+#lb-table tr.me td{background:rgba(74,144,217,.08);color:var(--accent)}
+/* Notifications */
+#notif{position:fixed;top:1rem;right:1rem;display:flex;flex-direction:column;gap:.4rem;z-index:999}
+.notif-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem 1rem;font-size:.85rem;min-width:220px;animation:slideIn .2s ease}
+.notif-item.error{border-color:var(--red);color:var(--red)}
+.notif-item.success{border-color:var(--green);color:var(--green)}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+/* Misc */
+.mt1{margin-top:.5rem}.mt2{margin-top:1rem}.flex-row{display:flex;gap:.5rem;align-items:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>⬡ Schelling Game</h1>
+    <div class="flex-row">
+      <button class="btn-ghost" id="nav-leaderboard">Leaderboard</button>
+      <button class="btn-ghost" id="nav-lobby">Lobby</button>
+    </div>
+  </header>
+
+  <!-- ── LOBBY ────────────────────────────────────────────────── -->
+  <div id="lobby-view" class="view active">
+    <div style="max-width:480px;margin:0 auto">
+      <div class="card" id="lobby-form">
+        <h2 style="margin-bottom:.75rem">Join or Create Room</h2>
+        <div>
+          <label>Your Username</label>
+          <input id="input-username" type="text" placeholder="e.g. alice" maxlength="20" autocomplete="off"/>
+        </div>
+        <div>
+          <label>Room Code (leave blank to create new)</label>
+          <input id="input-roomcode" type="text" placeholder="e.g. ABC123" maxlength="6" autocomplete="off" style="text-transform:uppercase"/>
+        </div>
+        <div>
+          <label>Rounds (if creating)</label>
+          <select id="input-rounds">
+            <option value="5">5 rounds</option>
+            <option value="7">7 rounds</option>
+            <option value="10" selected>10 rounds</option>
+          </select>
+        </div>
+        <button class="btn-primary" id="join-btn" style="width:100%">Join / Create Room</button>
+      </div>
+
+      <div id="lobby-room" class="card mt2 hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <div>
+            <div style="font-size:.8rem;color:var(--muted);margin-bottom:.25rem">Room Code</div>
+            <div id="room-code-display">------</div>
+          </div>
+          <div>
+            <div style="font-size:.8rem;color:var(--muted);margin-bottom:.25rem">Rounds</div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent)" id="lobby-rounds-display">-</div>
+          </div>
+        </div>
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:.4rem">Players</div>
+        <div id="lobby-players" class="player-list"></div>
+        <div class="mt2">
+          <button class="btn-primary" id="start-btn" style="width:100%;display:none">Start Game</button>
+          <div id="waiting-text" style="text-align:center;color:var(--muted);font-size:.85rem">Waiting for host to start…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GAME ─────────────────────────────────────────────────── -->
+  <div id="game-view" class="view">
+    <div id="game-main">
+      <!-- Timer -->
+      <div id="timer-wrap">
+        <div id="phase-label-timer" style="min-width:3.5rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Commit</div>
+        <div id="timer-bar-outer"><div id="timer-bar" style="width:100%"></div></div>
+        <div id="timer-num">30</div>
+      </div>
+
+      <!-- Phase banner -->
+      <div id="phase-banner" class="hidden">Reveal your answer now!</div>
+
+      <!-- Question card -->
+      <div id="question-card">
+        <div id="phase-label">Round <span id="round-num">1</span> / <span id="total-rounds">10</span> — Commit Phase</div>
+        <div id="question-text">Loading…</div>
+
+        <!-- Slider -->
+        <div id="slider-wrap">
+          <div id="slider-labels"><span>0.00</span><span>0.50</span><span>1.00</span></div>
+          <input id="slider-input" type="range" min="0" max="1" step="0.01" value="0.50"/>
+          <div id="slider-value">0.50</div>
+        </div>
+
+        <!-- Select options -->
+        <div id="select-grid" class="hidden"></div>
+
+        <!-- Commit area -->
+        <div id="commit-area" class="mt1">
+          <button class="btn-primary" id="commit-btn">🔒 Lock In</button>
+          <span id="commit-status-text"></span>
+        </div>
+
+        <!-- Reveal area -->
+        <div id="reveal-area" class="hidden mt1">
+          <button class="btn-primary" id="reveal-btn">👁 Reveal</button>
+          <span id="reveal-status-text" style="font-size:.85rem;color:var(--muted)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="game-sidebar">
+      <div id="players-panel">
+        <h3>Players</h3>
+        <div id="players-list"></div>
+      </div>
+      <div id="chat-panel">
+        <h3>Chat</h3>
+        <div id="chat-messages"></div>
+        <div id="chat-input-row">
+          <input id="chat-input" type="text" placeholder="Message…" maxlength="300" autocomplete="off"/>
+          <button class="btn-ghost" id="chat-send">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ───────────────────────────────────────────────── -->
+  <div id="results-view" class="view">
+    <div id="results-header">
+      <h2>Round <span id="res-round-num">?</span> Results</h2>
+      <div id="results-countdown">Next round in <span id="res-countdown">12</span>s</div>
+    </div>
+    <div id="cancel-banner" class="hidden">
+      ⚠ Round Cancelled — <span id="cancel-reason"></span>
+    </div>
+    <div id="dot-plot-wrap" class="hidden">
+      <svg id="dot-plot-svg" height="90" viewBox="0 0 800 90" preserveAspectRatio="none"></svg>
+      <div id="stats-row" class="mt1"></div>
+    </div>
+    <div id="results-players"></div>
+    <div id="educational-note"></div>
+  </div>
+
+  <!-- ── SUMMARY ───────────────────────────────────────────────── -->
+  <div id="summary-view" class="view">
+    <h2>Game Over</h2>
+    <table id="summary-table">
+      <thead>
+        <tr><th>#</th><th>Player</th><th>Final Balance</th><th>Profit/Loss</th></tr>
+      </thead>
+      <tbody id="summary-tbody"></tbody>
+    </table>
+    <div class="flex-row mt2">
+      <button class="btn-primary" id="play-again-btn">Play Again</button>
+      <button class="btn-ghost" id="view-lb-btn">Leaderboard</button>
+    </div>
+  </div>
+
+  <!-- ── LEADERBOARD ───────────────────────────────────────────── -->
+  <div id="leaderboard-view" class="view">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <h2>Global Leaderboard</h2>
+      <button class="btn-ghost" id="lb-back-btn">← Back</button>
+    </div>
+    <div id="my-rank-banner" class="hidden card" style="margin-bottom:.75rem;background:rgba(74,144,217,.08);border-color:var(--accent)"></div>
+    <table id="lb-table">
+      <thead>
+        <tr><th>#</th><th>Player</th><th>Score</th><th>Games</th><th>Coherent %</th><th>Streak</th></tr>
+      </thead>
+      <tbody id="lb-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div id="notif"></div>
+
+<script>
+'use strict';
+// ─────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────
+let ws = null;
+let myUsername = '';
+let myRoomCode = '';
+let myBalance = 100;
+let playerBalances = new Map(); // username -> balance
+let currentPhase = 'lobby';
+let currentQuestion = null;
+let myScore = null;       // chosen score (0..1, quantized)
+let mySalt = null;        // hex salt
+let myHash = null;        // sha-256 hex
+let hasCommitted = false;
+let hasRevealed = false;
+let commitDuration = 30;
+let revealDuration = 15;
+let timerEnd = 0;
+let timerRAF = null;
+let resultsTimer = null;
+let resultsEnd = 0;
+let resultsRAF = null;
+
+// ─────────────────────────────────────────────────────────────────────
+// View management
+// ─────────────────────────────────────────────────────────────────────
+const views = {
+  lobby:       document.getElementById('lobby-view'),
+  game:        document.getElementById('game-view'),
+  results:     document.getElementById('results-view'),
+  summary:     document.getElementById('summary-view'),
+  leaderboard: document.getElementById('leaderboard-view'),
+};
+
+function showView(name) {
+  Object.entries(views).forEach(([k, el]) => {
+    el.classList.toggle('active', k === name);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────────────────
+function notify(text, type = 'info', duration = 3500) {
+  const el = document.createElement('div');
+  el.className = `notif-item ${type}`;
+  el.textContent = text;
+  document.getElementById('notif').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// WebSocket connection
+// ─────────────────────────────────────────────────────────────────────
+let reconnectAttempts = 0;
+const MAX_RECONNECT_DELAY = 30000;
+
+function connect(username, roomCode, roundCount) {
+  if (ws) { try { ws.close(); } catch (_) {} }
+
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+
+  ws.addEventListener('open', () => {
+    reconnectAttempts = 0;
+    ws.send(JSON.stringify({ type: 'join', username, roomCode, roundCount }));
+  });
+
+  ws.addEventListener('message', e => {
+    try { handleServerMessage(JSON.parse(e.data)); }
+    catch (err) { console.error('Message parse error', err); }
+  });
+
+  ws.addEventListener('close', () => {
+    reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
+    notify(`Disconnected. Reconnecting in ${Math.round(delay / 1000)}s…`, 'error');
+    setTimeout(() => connect(myUsername, myRoomCode, parseInt(document.getElementById('input-rounds').value)), delay);
+  });
+
+  ws.addEventListener('error', () => {});
+}
+
+function sendWs(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Server message handler
+// ─────────────────────────────────────────────────────────────────────
+function handleServerMessage(msg) {
+  switch (msg.type) {
+    case 'room_state':       return onRoomState(msg);
+    case 'game_started':     return onGameStarted(msg);
+    case 'round_start':      return onRoundStart(msg);
+    case 'commit_status':    return onCommitStatus(msg);
+    case 'phase_change':     return onPhaseChange(msg);
+    case 'reveal_status':    return onRevealStatus(msg);
+    case 'round_result':     return onRoundResult(msg);
+    case 'game_over':        return onGameOver(msg);
+    case 'chat':             return onChat(msg);
+    case 'report_ack':       return notify('Leak reported ✓', 'success', 1500);
+    case 'error':            return notify(msg.message, 'error');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Room state
+// ─────────────────────────────────────────────────────────────────────
+function onRoomState(msg) {
+  const { room, players, myBalance: bal } = msg;
+  if (bal !== undefined) myBalance = bal;
+  myRoomCode = room.code;
+
+  // Update per-player balance map
+  for (const p of players) {
+    if (p.balance !== undefined) playerBalances.set(p.username, p.balance);
+  }
+
+  document.getElementById('lobby-room').classList.remove('hidden');
+  document.getElementById('room-code-display').textContent = room.code;
+  document.getElementById('lobby-rounds-display').textContent = room.totalRounds;
+
+  const isHost = room.host === myUsername;
+  document.getElementById('start-btn').style.display = isHost ? '' : 'none';
+  document.getElementById('waiting-text').style.display = isHost ? 'none' : '';
+
+  const list = document.getElementById('lobby-players');
+  list.innerHTML = '';
+  for (const p of players) {
+    const chip = document.createElement('div');
+    chip.className = `player-chip${p.isHost ? ' host' : ''}${!p.isConnected ? ' disconnected' : ''}`;
+    chip.textContent = p.username + (p.isHost ? '' : '');
+    list.appendChild(chip);
+  }
+
+  if (room.phase === 'lobby') showView('lobby');
+}
+
+function onGameStarted(msg) {
+  document.getElementById('total-rounds').textContent = msg.roundCount;
+  currentPhase = 'commit';
+  showView('game');
+  resetChatMessages();
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Round start
+// ─────────────────────────────────────────────────────────────────────
+function onRoundStart(msg) {
+  const { round, question, commitDuration: cd, phase } = msg;
+  currentQuestion = question;
+  commitDuration = cd;
+  currentPhase = phase;
+  hasCommitted = false;
+  hasRevealed = false;
+  myScore = null;
+  mySalt = null;
+  myHash = null;
+
+  showView('game');
+
+  document.getElementById('round-num').textContent = round;
+  document.getElementById('phase-label').textContent = `Round ${round} / ${document.getElementById('total-rounds').textContent} — Commit Phase`;
+  document.getElementById('phase-label-timer').textContent = 'Commit';
+  document.getElementById('question-text').textContent = question.text;
+
+  // Show correct input
+  const sliderWrap = document.getElementById('slider-wrap');
+  const selectGrid = document.getElementById('select-grid');
+  if (question.type === 'slider') {
+    sliderWrap.classList.remove('hidden');
+    selectGrid.classList.add('hidden');
+    const slider = document.getElementById('slider-input');
+    slider.value = 0.5;
+    document.getElementById('slider-value').textContent = '0.50';
+    myScore = 0.50;
+  } else {
+    sliderWrap.classList.add('hidden');
+    selectGrid.classList.remove('hidden');
+    renderSelectGrid(question.options);
+    myScore = null;
+  }
+
+  // Commit / reveal areas
+  document.getElementById('commit-area').classList.remove('hidden');
+  document.getElementById('reveal-area').classList.add('hidden');
+  document.getElementById('commit-btn').disabled = false;
+  document.getElementById('commit-status-text').textContent = '';
+  document.getElementById('phase-banner').classList.add('hidden');
+
+  startTimer(commitDuration, 'commit');
+}
+
+function renderSelectGrid(options) {
+  const grid = document.getElementById('select-grid');
+  grid.innerHTML = '';
+  options.forEach((opt, idx) => {
+    const card = document.createElement('div');
+    card.className = 'opt-card';
+    card.textContent = opt;
+    card.dataset.idx = idx;
+    card.addEventListener('click', () => {
+      if (hasCommitted) return;
+      grid.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      myScore = Math.round((idx / Math.max(1, options.length - 1)) * 100) / 100;
+    });
+    grid.appendChild(card);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Commit
+// ─────────────────────────────────────────────────────────────────────
+document.getElementById('commit-btn').addEventListener('click', async () => {
+  if (hasCommitted) return;
+  if (myScore === null) return notify('Please select an answer first.', 'error');
+
+  const saltBytes = crypto.getRandomValues(new Uint8Array(32));
+  mySalt = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  const preimage = `${myScore.toFixed(2)}:${mySalt}`;
+  const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(preimage));
+  myHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  hasCommitted = true;
+  document.getElementById('commit-btn').disabled = true;
+  document.getElementById('commit-status-text').textContent = '✓ Committed';
+
+  // Lock input
+  document.getElementById('slider-input').disabled = true;
+  document.getElementById('select-grid').querySelectorAll('.opt-card').forEach(c => c.classList.add('disabled'));
+
+  sendWs({ type: 'commit', hash: myHash });
+});
+
+function onCommitStatus(msg) {
+  renderPlayerList(msg.committed.map(p => ({ ...p, phase: 'commit' })));
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Reveal phase
+// ─────────────────────────────────────────────────────────────────────
+function onPhaseChange(msg) {
+  if (msg.phase === 'reveal') {
+    currentPhase = 'reveal';
+    revealDuration = msg.revealDuration;
+    document.getElementById('phase-label').textContent =
+      `Round ${document.getElementById('round-num').textContent} / ${document.getElementById('total-rounds').textContent} — Reveal Phase`;
+    document.getElementById('phase-label-timer').textContent = 'Reveal';
+    document.getElementById('phase-banner').classList.remove('hidden');
+    document.getElementById('phase-banner').textContent = '👁 Reveal your answer now!';
+
+    document.getElementById('commit-area').classList.add('hidden');
+    document.getElementById('reveal-area').classList.remove('hidden');
+
+    if (!hasCommitted) {
+      document.getElementById('reveal-btn').disabled = true;
+      document.getElementById('reveal-status-text').textContent = 'You did not commit.';
+    } else if (hasRevealed) {
+      document.getElementById('reveal-btn').disabled = true;
+      document.getElementById('reveal-status-text').textContent = '✓ Revealed';
+    }
+
+    startTimer(revealDuration, 'reveal');
+  }
+}
+
+document.getElementById('reveal-btn').addEventListener('click', () => {
+  if (!hasCommitted || hasRevealed) return;
+  hasRevealed = true;
+  document.getElementById('reveal-btn').disabled = true;
+  document.getElementById('reveal-status-text').textContent = '✓ Revealed';
+  sendWs({ type: 'reveal', score: myScore, salt: mySalt });
+});
+
+function onRevealStatus(msg) {
+  renderPlayerList(msg.revealed.map(p => ({ ...p, phase: 'reveal' })));
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Round results
+// ─────────────────────────────────────────────────────────────────────
+function onRoundResult(msg) {
+  clearTimers();
+  const { result } = msg;
+  currentPhase = 'results';
+  showView('results');
+
+  document.getElementById('res-round-num').textContent = result.roundNum;
+  document.getElementById('educational-note').textContent = result.educationalNote;
+
+  const cancelBanner = document.getElementById('cancel-banner');
+  const dotPlotWrap = document.getElementById('dot-plot-wrap');
+
+  if (result.cancelled) {
+    cancelBanner.classList.remove('hidden');
+    const reasonMap = {
+      fewer_than_3_reveals: 'fewer than 3 players revealed.',
+      sigma_too_small: 'all answers were too similar (σ < 0.02).',
+    };
+    document.getElementById('cancel-reason').textContent = reasonMap[result.cancelReason] || result.cancelReason;
+    dotPlotWrap.classList.add('hidden');
+  } else {
+    cancelBanner.classList.add('hidden');
+    dotPlotWrap.classList.remove('hidden');
+    renderDotPlot(result);
+    renderStats(result);
+  }
+
+  renderResultCards(result);
+
+  // Countdown
+  resultsEnd = Date.now() + 12000;
+  tickResultsCountdown();
+}
+
+function renderDotPlot(result) {
+  const svg = document.getElementById('dot-plot-svg');
+  svg.innerHTML = '';
+  const W = 800, H = 90, PAD = 30;
+  const plotW = W - 2 * PAD;
+
+  const toX = v => PAD + v * plotW;
+
+  // Coherence band
+  if (result.mu !== null && result.sigma !== null) {
+    const lo = Math.max(0, result.mu - 1.25 * result.sigma);
+    const hi = Math.min(1, result.mu + 1.25 * result.sigma);
+    const band = createSVGEl('rect', {
+      x: toX(lo), y: 20, width: toX(hi) - toX(lo), height: 50,
+      fill: 'rgba(74,144,217,0.12)', rx: 4,
+    });
+    svg.appendChild(band);
+  }
+
+  // Axis line
+  const axis = createSVGEl('line', { x1: PAD, y1: 70, x2: W - PAD, y2: 70, stroke: '#333', 'stroke-width': 1 });
+  svg.appendChild(axis);
+
+  // Axis labels
+  ['0.00', '0.25', '0.50', '0.75', '1.00'].forEach(v => {
+    const x = toX(parseFloat(v));
+    const tick = createSVGEl('line', { x1: x, y1: 68, x2: x, y2: 72, stroke: '#444', 'stroke-width': 1 });
+    svg.appendChild(tick);
+    const lbl = createSVGEl('text', { x, y: 84, 'text-anchor': 'middle', fill: '#666', 'font-size': 10 });
+    lbl.textContent = v;
+    svg.appendChild(lbl);
+  });
+
+  // Mu line
+  if (result.mu !== null) {
+    const mx = toX(result.mu);
+    const muLine = createSVGEl('line', { x1: mx, y1: 15, x2: mx, y2: 70, stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-dasharray': '4 3' });
+    svg.appendChild(muLine);
+    const muLbl = createSVGEl('text', { x: mx, y: 12, 'text-anchor': 'middle', fill: 'var(--accent)', 'font-size': 10 });
+    muLbl.textContent = `μ=${result.mu.toFixed(2)}`;
+    svg.appendChild(muLbl);
+  }
+
+  // Dots
+  const scored = (result.players || []).filter(p => p.score !== null);
+  const jitter = new Map();
+  scored.forEach(p => {
+    const x = toX(p.score);
+    const key = Math.round(p.score * 200);
+    const count = jitter.get(key) || 0;
+    jitter.set(key, count + 1);
+    const y = 65 - count * 12;
+    const color = p.coherent ? 'var(--green)' : 'var(--red)';
+    const dot = createSVGEl('circle', { cx: x, cy: y, r: 7, fill: color, opacity: 0.9 });
+    const title = createSVGEl('title');
+    title.textContent = `${p.username}: ${p.score.toFixed(2)}`;
+    dot.appendChild(title);
+    svg.appendChild(dot);
+  });
+}
+
+function renderStats(result) {
+  const row = document.getElementById('stats-row');
+  row.innerHTML = '';
+  const stats = [
+    { label: 'μ (mean)', value: result.mu?.toFixed(4) ?? '—' },
+    { label: 'σ (std dev)', value: result.sigma?.toFixed(4) ?? '—' },
+    { label: 'Coherent', value: (result.players || []).filter(p => p.coherent).length + ' / ' + (result.players || []).length },
+  ];
+  stats.forEach(s => {
+    const pill = document.createElement('div');
+    pill.className = 'stat-pill';
+    pill.innerHTML = `${s.label}: <span>${s.value}</span>`;
+    row.appendChild(pill);
+  });
+}
+
+function renderResultCards(result) {
+  const container = document.getElementById('results-players');
+  container.innerHTML = '';
+  for (const p of (result.players || [])) {
+    const card = document.createElement('div');
+    const coherentClass = result.cancelled ? '' : (p.coherent ? 'coherent' : 'incoherent');
+    card.className = `result-card ${coherentClass}`;
+
+    const delta = (p.reward || 0) - (p.slash || 0);
+    const deltaStr = (delta >= 0 ? '+' : '') + delta.toFixed(2);
+    const deltaClass = delta >= 0 ? 'pos' : 'neg';
+
+    const isMe = p.username === myUsername;
+    if (isMe) myBalance = p.newBalance ?? myBalance;
+    if (p.newBalance !== undefined) playerBalances.set(p.username, p.newBalance);
+
+    card.innerHTML = `
+      <div class="rname">${escHtml(p.username)}${isMe ? ' (you)' : ''}${p.isLeaker ? ' 🚨' : ''}</div>
+      ${p.score !== null ? `<div>Score: <b>${p.score.toFixed(2)}</b></div>` : '<div style="color:var(--muted)">No reveal</div>'}
+      ${!result.cancelled ? `<div>Slash: <span style="color:var(--red)">-${(p.slash||0).toFixed(2)}</span> &nbsp; Reward: <span style="color:var(--green)">+${(p.reward||0).toFixed(2)}</span></div>` : ''}
+      <div class="rdelta ${deltaClass}">${deltaStr} chips → ${(p.newBalance ?? '?')}</div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+function tickResultsCountdown() {
+  if (resultsRAF) cancelAnimationFrame(resultsRAF);
+  const tick = () => {
+    const rem = Math.max(0, Math.ceil((resultsEnd - Date.now()) / 1000));
+    document.getElementById('res-countdown').textContent = rem;
+    if (rem > 0) resultsRAF = requestAnimationFrame(tick);
+  };
+  resultsRAF = requestAnimationFrame(tick);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Game over / Summary
+// ─────────────────────────────────────────────────────────────────────
+function onGameOver(msg) {
+  clearTimers();
+  showView('summary');
+  const tbody = document.getElementById('summary-tbody');
+  tbody.innerHTML = '';
+  msg.summary.players.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    const profitClass = p.profit >= 0 ? 'profit-pos' : 'profit-neg';
+    const profitStr = (p.profit >= 0 ? '+' : '') + p.profit;
+    tr.innerHTML = `<td>${i + 1}</td><td>${escHtml(p.username)}${p.username === myUsername ? ' (you)' : ''}</td><td>${p.finalBalance}</td><td class="${profitClass}">${profitStr}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('play-again-btn').addEventListener('click', () => {
+  showView('lobby');
+  document.getElementById('lobby-room').classList.remove('hidden');
+});
+
+document.getElementById('view-lb-btn').addEventListener('click', () => loadLeaderboard());
+
+// ─────────────────────────────────────────────────────────────────────
+// Chat
+// ─────────────────────────────────────────────────────────────────────
+function onChat(msg) {
+  addChatMessage(msg.from, msg.text, msg.messageId, msg.from !== myUsername);
+}
+
+function addChatMessage(from, text, messageId, canReport) {
+  const container = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.dataset.msgId = messageId;
+  el.innerHTML = `<span class="from">${escHtml(from)}</span>${escHtml(text)}`;
+  if (canReport && currentPhase === 'commit') {
+    const btn = document.createElement('button');
+    btn.className = 'report-btn';
+    btn.title = 'Report as leak';
+    btn.textContent = '⚑';
+    btn.addEventListener('click', () => {
+      sendWs({ type: 'report_leak', messageId, suspectUsername: from });
+      btn.disabled = true;
+      btn.textContent = '✓';
+    });
+    el.appendChild(btn);
+  }
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function resetChatMessages() {
+  document.getElementById('chat-messages').innerHTML = '';
+}
+
+document.getElementById('chat-send').addEventListener('click', sendChat);
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (currentPhase !== 'commit' && currentPhase !== 'lobby') {
+    return notify('Chat is only available during commit phase or lobby.', 'error');
+  }
+  input.value = '';
+  sendWs({ type: 'chat', text });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Slider
+// ─────────────────────────────────────────────────────────────────────
+document.getElementById('slider-input').addEventListener('input', e => {
+  const v = Math.round(parseFloat(e.target.value) * 100) / 100;
+  document.getElementById('slider-value').textContent = v.toFixed(2);
+  myScore = v;
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Timer
+// ─────────────────────────────────────────────────────────────────────
+function startTimer(duration, phase) {
+  clearTimerAnim();
+  timerEnd = Date.now() + duration * 1000;
+  const bar = document.getElementById('timer-bar');
+  const num = document.getElementById('timer-num');
+  bar.style.background = phase === 'commit' ? 'var(--accent)' : 'var(--orange)';
+
+  const tick = () => {
+    const elapsed = Date.now() - (timerEnd - duration * 1000);
+    const remaining = Math.max(0, (timerEnd - Date.now()) / 1000);
+    const pct = Math.max(0, (1 - elapsed / (duration * 1000)) * 100);
+    bar.style.width = pct + '%';
+    num.textContent = Math.ceil(remaining);
+
+    if (remaining <= 5) {
+      bar.style.background = 'var(--red)';
+      num.classList.add('pulse');
+    } else {
+      num.classList.remove('pulse');
+    }
+    if (remaining > 0) timerRAF = requestAnimationFrame(tick);
+  };
+  timerRAF = requestAnimationFrame(tick);
+}
+
+function clearTimerAnim() {
+  if (timerRAF) { cancelAnimationFrame(timerRAF); timerRAF = null; }
+}
+
+function clearTimers() {
+  clearTimerAnim();
+  if (resultsRAF) { cancelAnimationFrame(resultsRAF); resultsRAF = null; }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Players list (game sidebar)
+// ─────────────────────────────────────────────────────────────────────
+function renderPlayerList(statuses) {
+  const list = document.getElementById('players-list');
+  list.innerHTML = '';
+  for (const p of statuses) {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    const hasAct = p.hasCommitted || p.hasRevealed;
+    const dotClass = p.hasRevealed ? 'revealed' : (p.hasCommitted ? 'committed' : '');
+    row.innerHTML = `
+      <div class="player-name">
+        <div class="dot ${dotClass}"></div>
+        ${escHtml(p.username)}${p.username === myUsername ? ' (you)' : ''}
+      </div>
+      <div class="balance-badge">${playerBalances.get(p.username) ?? (p.username === myUsername ? myBalance : '?')} ⬡</div>
+    `;
+    list.appendChild(row);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Leaderboard
+// ─────────────────────────────────────────────────────────────────────
+async function loadLeaderboard() {
+  showView('leaderboard');
+  try {
+    const [rows, me] = await Promise.all([
+      fetch('/api/leaderboard').then(r => r.json()),
+      myUsername ? fetch(`/api/leaderboard/me?username=${encodeURIComponent(myUsername)}`).then(r => r.ok ? r.json() : null) : Promise.resolve(null),
+    ]);
+
+    const tbody = document.getElementById('lb-tbody');
+    tbody.innerHTML = '';
+    rows.forEach((p, i) => {
+      const pct = p.rounds_played > 0 ? Math.round(p.coherent_rounds / p.rounds_played * 100) : 0;
+      const tr = document.createElement('tr');
+      if (p.username === myUsername) tr.className = 'me';
+      tr.innerHTML = `<td>${i + 1}</td><td>${escHtml(p.username)}</td><td>${p.global_score}</td><td>${p.games_played}</td><td>${pct}%</td><td>${p.longest_streak}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    const banner = document.getElementById('my-rank-banner');
+    if (me && me.rank) {
+      banner.classList.remove('hidden');
+      const pct = me.rounds_played > 0 ? Math.round(me.coherent_rounds / me.rounds_played * 100) : 0;
+      banner.innerHTML = `<b>${escHtml(me.username)}</b> — Rank #${me.rank} &nbsp;|&nbsp; Score: ${me.global_score} &nbsp;|&nbsp; Coherent: ${pct}% &nbsp;|&nbsp; Streak: ${me.longest_streak}`;
+    } else {
+      banner.classList.add('hidden');
+    }
+  } catch (err) {
+    notify('Failed to load leaderboard: ' + err.message, 'error');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────────────────────────────
+document.getElementById('nav-leaderboard').addEventListener('click', loadLeaderboard);
+document.getElementById('nav-lobby').addEventListener('click', () => showView('lobby'));
+document.getElementById('lb-back-btn').addEventListener('click', () => {
+  showView(currentPhase === 'results' ? 'results' : currentPhase === 'commit' || currentPhase === 'reveal' ? 'game' : 'lobby');
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Lobby / Join
+// ─────────────────────────────────────────────────────────────────────
+document.getElementById('join-btn').addEventListener('click', () => {
+  const username = document.getElementById('input-username').value.trim();
+  const roomCode = document.getElementById('input-roomcode').value.trim().toUpperCase() || generateCode();
+  const roundCount = parseInt(document.getElementById('input-rounds').value);
+
+  if (!username) return notify('Please enter a username.', 'error');
+  if (!/^[A-Za-z0-9_\-]{1,20}$/.test(username)) return notify('Username: 1-20 alphanumeric chars only.', 'error');
+
+  myUsername = username;
+  myRoomCode = roomCode;
+  document.getElementById('input-roomcode').value = roomCode;
+
+  connect(username, roomCode, roundCount);
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  sendWs({ type: 'start_game' });
+});
+
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Utils
+// ─────────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function createSVGEl(tag, attrs = {}) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+  return el;
+}
+</script>
+</body>
+</html>
