@@ -32,7 +32,7 @@ label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:.3rem}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.75rem}
 header h1{font-size:1.4rem;letter-spacing:.05em;color:var(--accent)}
 /* ── Views ───────────────────────────────────────────────────────── */
-.view{display:none}.view.active{display:block}
+.view:not(.active){display:none!important}
 /* Lobby */
 #lobby-form{display:grid;gap:.75rem;max-width:420px;margin:0 auto}
 #lobby-form .row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
@@ -171,9 +171,8 @@ header h1{font-size:1.4rem;letter-spacing:.05em;color:var(--accent)}
           <label>Rounds (if creating)</label>
           <select id="input-rounds">
             <option value="5">5 rounds</option>
+            <option value="7">7 rounds</option>
             <option value="10" selected>10 rounds</option>
-            <option value="15">15 rounds</option>
-            <option value="20">20 rounds</option>
           </select>
         </div>
         <button class="btn-primary" id="join-btn" style="width:100%">Join / Create Room</button>

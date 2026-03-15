@@ -5,7 +5,8 @@ const { verifyCommit, computeRoundResult, applyBalanceChanges } = require('./gam
 const db = require('./db');
 const QUESTIONS = require('./questions');
 
-const STARTING_BALANCE = 100;
+const STARTING_BALANCE = 1000;
+const ROUND_STAKE = 100;
 const COMMIT_DURATION_NORMAL = 30;   // seconds
 const COMMIT_DURATION_ESTIMATION = 60;
 const REVEAL_DURATION = 15;
@@ -117,7 +118,7 @@ function finaliseRound(room) {
     username: p.username,
     score: p.score,
     balance: p.balance,
-    stake: Math.min(100, p.balance > 0 ? p.balance : 0),
+    stake: Math.min(ROUND_STAKE, p.balance > 0 ? p.balance : 0),
     hash: p.hash,
     committed: p.committed,
     revealed: p.revealed,
@@ -270,7 +271,7 @@ function handleJoin(ws, msg) {
       players: new Map(),
       phase: 'lobby',
       currentRound: 0,
-      totalRounds: Math.max(1, Math.min(20, roundCount || 10)),
+      totalRounds: [5, 7, 10].includes(roundCount) ? roundCount : 10,
       questions: [],
       chatMessages: [],
       leakReports: [],
